@@ -6,6 +6,7 @@ import (
 	hpack "github.com/ami-GS/GoHPACK"
 	"html/template"
 	"net/http"
+	//"reflect"
 	"strings"
 	//"time"
 
@@ -53,10 +54,10 @@ var inputHPACK = template.Must(template.New("hoge").Parse(`
   <body>
     <p>input header json or wire</p>
     <form action="/verify" method="post">
-      <div><textarea raws="10" cols="60" name="content"></textarea></div>
-      <div><input type="checkbox" value="static" name="content">
-      <input type="checkbox" value="dynamic" name="content">
-      <input type="checkbox" value="huffman" name="content"></div>
+      <div><textarea style="width:650px; height:800px;" raws="10" cols="60" name="content"></textarea></div>
+      <div><input type="checkbox" value="static" name="content">static
+      <input type="checkbox" value="dynamic" name="content">dynamic
+      <input type="checkbox" value="huffman" name="content">huffman</div>
       <div><input type="submit" value="verify"></div>
     </form>
   </body>
@@ -73,9 +74,9 @@ func verify(w http.ResponseWriter, r *http.Request) {
 	isStatic := false
 	isDynamic := false
 	isHuffman := false
-	var rawData string
+	rawData := ""
 	c := appengine.NewContext(r)
-	c.Debugf("r.Form %s", r.Form["content"])
+	c.Debugf("r.Form %s %d", r.Form["content"], len(r.Form["content"]))
 	for _, content := range r.Form["content"] {
 		if string(content) == "static" {
 			isStatic = true
@@ -86,18 +87,32 @@ func verify(w http.ResponseWriter, r *http.Request) {
 		} else {
 			rawData = string(content)
 		}
-	}
-	if strings.Contains(rawData, "[") {
-		var jsontype jsonobject
-		data := []byte(rawData)
-		json.Unmarshal(data, &jsontype)
-		for i, seq := range jsontype.Cases {
-			headers := ConvertHeader(seq.Headers)
-			wire := hpack.Encode(headers, isStatic, isDynamic, isHuffman, &table, -1)
-			fmt.Fprintf(w, "seqno:%v %s\n\n", i, wire)
+
+		if strings.Contains(rawData, "[") {
+			var jsontype jsonobject
+			data := []byte(rawData)
+			json.Unmarshal(data, &jsontype)
+			for i, seq := range jsontype.Cases {
+				headers := ConvertHeader(seq.Headers)
+				wire := hpack.Encode(headers, isStatic, isDynamic, isHuffman, &table, -1)
+				fmt.Fprintf(w, "seqno:%v %s\n\n", i, wire)
+			}
+		} else {
+			/*
+				for _, data := range strings.Split(rawData, "\n\r") {
+					//c.Debugf("%s, %d:", data, strings.Count(data, "\n"))
+					for _, cc := range data {
+						c.Debugf("%c, %b, %s, %d ", cc, cc, data, strings.Count(data, "\n"))
+					}
+				}
+			*/
+			for _, data := range strings.Split(rawData, "\r\n") {
+				c.Debugf("data %s last %c", data, data[len(data)-1])
+				headers := hpack.Decode(data, &table)
+				c.Debugf("headers %v", headers)
+				fmt.Fprintf(w, "%v\n", headers)
+			}
 		}
-	} else {
-		headers := hpack.Decode(rawData, &table)
-		fmt.Fprintf(w, "%v\n", headers)
 	}
+
 }
