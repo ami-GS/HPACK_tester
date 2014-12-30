@@ -108,10 +108,13 @@ func verify(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			*/
+			rawData = strings.Trim(rawData, "\r\n")
 			for _, data := range strings.Split(rawData, "\r\n") {
-				headers := hpack.Decode(data, &table)
-				c.Debugf("headers %v", headers)
-				fmt.Fprintf(w, "%v\n", headers)
+				if len(data) != 0 {
+					headers := hpack.Decode(data, &table)
+					c.Debugf("headers %v", headers)
+					fmt.Fprintf(w, "%v\n", headers)
+				}
 			}
 		}
 	}
