@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	hpack "github.com/ami-GS/GoHPACK"
+	"github.com/ami-GS/GoHPACK/huffman"
 	"html/template"
 	"net/http"
 	//"reflect"
@@ -29,6 +30,7 @@ type Case struct {
 func init() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/verify", verify)
+	huffman.Root.CreateTree()
 }
 
 func ConvertHeader(headers []map[string]string) (dist []hpack.Header) {
@@ -107,7 +109,6 @@ func verify(w http.ResponseWriter, r *http.Request) {
 				}
 			*/
 			for _, data := range strings.Split(rawData, "\r\n") {
-				c.Debugf("data %s last %c", data, data[len(data)-1])
 				headers := hpack.Decode(data, &table)
 				c.Debugf("headers %v", headers)
 				fmt.Fprintf(w, "%v\n", headers)
