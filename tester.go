@@ -1,13 +1,13 @@
 package tester
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	hpack "github.com/ami-GS/GoHPACK"
 	"github.com/ami-GS/GoHPACK/huffman"
 	"html/template"
 	"net/http"
-	//"reflect"
 	"strings"
 	//"time"
 
@@ -110,8 +110,12 @@ func verify(w http.ResponseWriter, r *http.Request) {
 			*/
 			rawData = strings.Trim(rawData, "\r\n")
 			for _, data := range strings.Split(rawData, "\r\n") {
+				d, err := hex.DecodeString(data)
+				if err != nil {
+					panic(err)
+				}
 				if len(data) != 0 {
-					headers := hpack.Decode(data, &table)
+					headers := hpack.Decode(d, &table)
 					c.Debugf("headers %v", headers)
 					fmt.Fprintf(w, "%v\n", headers)
 				}
